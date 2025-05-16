@@ -14,6 +14,7 @@ def productrow(productlist,count):
             i=0
             yield datalist
             datalist=[]
+    if datalist:
         yield datalist
             
             

@@ -1,0 +1,46 @@
+{% load static%}
+{% include "header.html" %}
+    <div class="small-container cart-page">
+        <table>
+            <tr>
+                <th>Product</th>
+                <th>Quantity</th>
+                <th>Subtotal</th>
+            </tr>
+            {% for item in cartitems %}
+            <tr>
+                <td>
+                    <div class="cart-info">
+                        <img src="{{ item.product.image.url }}">
+                        <div>
+                            <p>{{ item.product.name}}</p>
+                            <small>Price: ${{ item.product.price }}</small>
+                            <br>
+                            <a href="{% url 'RemoveCartItem' id=item.id %}">Remove</a>
+                        </div>
+                    </div>
+                </td>
+                <td><input type="number" value="{{ item.quantity }}"></td>
+                <td>{{ item.subtotal }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        <div class="total-price">
+            <table>
+                <tr>
+                    <td>Subtotal</td>
+                    <td>{{ subtotal }}</td>
+                </tr>
+                <tr>
+                    <td>Tax</td>
+                    <td>{{ tax }}</td>
+                </tr>
+                <tr>
+                    <td>Total</td>
+                    <td>{{ grandtotal }}</td>
+                </tr>
+            </table>
+        </div>
+         <button type="submit" class="btn" style="margin-left:630px;border:none;">Confirm Order</button>
+    </div>
+{% include "footer.html" %}

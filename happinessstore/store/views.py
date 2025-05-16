@@ -7,15 +7,18 @@ from django.contrib.auth.decorators import login_required
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib import messages
-from .models import products
+from .models import products,Cart,CartItem,User
+from django.core.paginator import Paginator
+from django.core.exceptions import ObjectDoesNotExist
 
 def Register(request):
     if request.method == 'POST':
         form=UserCreationForm(request.POST)
         username= request.POST.get('username')
         if form.is_valid():
-            form.save()
+            user=form.save()
             messages.success(request,f"newuser{username} created successfully")
+            Cart.objects.create(user=user)
             return redirect('login')
         else:
             messages.error(request,"correct the errors below")
@@ -46,7 +49,51 @@ def HomePage(request):
 
 def Products(request):
     Products = products.objects.all()
-    context =  {'products' : Products}
+    paginator = Paginator(Products,5)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+    current_page = page_number if page_number else 1
+    context =  {'products' : page_obj,'current_page' : current_page}
     return render (request,"products.html",context)
 
+def ProductDetails(request,id):
+    product = products.objects.get(pk=id)
+    context = {'product' : product}
+    return render(request,'product_details.html',context)
 
+def cart(request):  
+    user = request.user
+    cart = Cart.objects.get(user=user)
+    cart_items=cart.items.all()
+    grand_total = sum(item.quantity * item.product.price for item in cart_items)
+    tax = grand_total*10/100
+    context={ 'cartitems' : cart_items,
+              'subtotal' : grand_total,
+              'tax' : tax,
+              'grandtotal' : grand_total+tax
+            }
+    return render(request,'cart.html',context)
+
+def AddtoCart(request):
+    if request.method == 'POST':
+        user = request.user
+        cart= Cart.objects.get(user= user)
+        productid= request.POST.get('productid')
+        product = products.objects.get(id= productid)
+        quantity = request.POST.get('quantity')
+       
+        try:
+            cart_item=CartItem.objects.get(cart=cart,product=product)
+            cart_item.quantity+=int(quantity)
+            cart_item.save()
+        except ObjectDoesNotExist:
+            cart_item=CartItem.objects.create(cart=cart ,product=product, quantity=quantity)
+            cart_item.save()
+        return redirect('cart')
+    
+def RemoveCartItem(request,id):
+    user = request.user
+    cart = Cart.objects.get(user = user)
+    cart_item = cart.items.get( id = id)
+    cart_item.delete()
+    return redirect('cart')
