@@ -41,6 +41,6 @@
                 </tr>
             </table>
         </div>
-         <button type="submit" class="btn" style="margin-left:630px;border:none;">Confirm Order</button>
+         <a href="{% url 'Initiate_payment' amount=grandtotal %}" type="submit" class="btn" style="margin-left:630px;border:none;">Confirm Order</a>
     </div>
 {% include "footer.html" %}

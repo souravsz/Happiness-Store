@@ -1,0 +1,46 @@
+{% include "header.html" %}
+
+<div style="text-align: center; margin-top: 100px;">
+    <h2 style="font-family: Arial, sans-serif; font-size: 24px; color: #333;">
+        Pay ₹{{ amount|floatformat:"2" }}
+    </h2>
+
+    <button id="pay-button" style="
+        background-color: #28a745;
+        color: white;
+        padding: 12px 25px;
+        font-size: 16px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-top: 20px;
+    ">
+        Pay Now
+    </button>
+</div>
+<br>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+var options = {
+    "key": "{{ razorpay_key_id }}",
+    "amount": "{{ amount_in_paise }}", 
+    "currency": "INR",
+    "name": "Your Company",
+    "description": "Test Payment",
+    "order_id": "{{ razorpay_order_id }}",
+    "handler": function (response){
+        alert('Payment successful: ' + response.razorpay_payment_id);
+    },
+    "theme": {
+        "color": "#3399cc"
+    }
+};
+
+var rzp1 = new Razorpay(options);
+document.getElementById('pay-button').onclick = function(e){
+    rzp1.open();
+    e.preventDefault();
+}
+</script>
+
+{% include "footer.html" %}

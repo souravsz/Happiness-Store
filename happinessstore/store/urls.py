@@ -10,5 +10,6 @@ urlpatterns = [
     path('ProductDetail/<id>', views.ProductDetails ,name="productdetail"),
     path('Cart', views.cart ,name="cart"),
     path('AddtoCart', views.AddtoCart ,name="addtocart"),
-    path('RemoveCartItem/<id>', views.RemoveCartItem ,name="RemoveCartItem")
+    path('RemoveCartItem/<id>', views.RemoveCartItem ,name="RemoveCartItem"),
+    path('initiatepayment/<amount>', views.initiate_payment ,name="Initiate_payment")
 ]

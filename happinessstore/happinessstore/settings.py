@@ -135,3 +135,5 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
+RAZORPAY_KEY_ID = "rzp_test_Eab4ytV8VH6Qid"
+RAZORPAY_KEY_SECRET = "XGypktYNKGFleQ7eZb1yI9kv"

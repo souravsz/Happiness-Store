@@ -22,5 +22,16 @@ class CartItem(models.Model):
     @property
     def subtotal(self):
         return self.quantity * self.product.price
-    
+ 
+ 
+class Payment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)  # Link to user
+    order_id = models.CharField(max_length=100)
+    payment_id = models.CharField(max_length=100, blank=True, null=True)
+    amount = models.FloatField()
+    status = models.CharField(max_length=20, default='CREATED')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.order_id} - {self.status}"    
     

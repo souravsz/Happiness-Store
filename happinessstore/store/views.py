@@ -10,6 +10,10 @@ from django.contrib import messages
 from .models import products,Cart,CartItem,User
 from django.core.paginator import Paginator
 from django.core.exceptions import ObjectDoesNotExist
+import razorpay
+from django.conf import settings
+from .models import Payment
+
 
 def Register(request):
     if request.method == 'POST':
@@ -47,20 +51,23 @@ def Logout(request):
 def HomePage(request):
     return render (request,"homepage.html")
 
+@login_required
 def Products(request):
     Products = products.objects.all()
-    paginator = Paginator(Products,5)
+    paginator = Paginator(Products,4)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
     current_page = page_number if page_number else 1
     context =  {'products' : page_obj,'current_page' : current_page}
     return render (request,"products.html",context)
 
+@login_required
 def ProductDetails(request,id):
     product = products.objects.get(pk=id)
     context = {'product' : product}
     return render(request,'product_details.html',context)
 
+@login_required
 def cart(request):  
     user = request.user
     cart = Cart.objects.get(user=user)
@@ -74,6 +81,7 @@ def cart(request):
             }
     return render(request,'cart.html',context)
 
+@login_required
 def AddtoCart(request):
     if request.method == 'POST':
         user = request.user
@@ -91,9 +99,41 @@ def AddtoCart(request):
             cart_item.save()
         return redirect('cart')
     
+@login_required
 def RemoveCartItem(request,id):
     user = request.user
     cart = Cart.objects.get(user = user)
     cart_item = cart.items.get( id = id)
     cart_item.delete()
     return redirect('cart')
+
+@login_required
+def initiate_payment(request,amount):
+    client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+    amount = float(amount)
+    amount_in_paise = int(amount) * 100
+    currency = "INR"
+
+   
+    razorpay_order = client.order.create({
+        'amount': amount_in_paise,
+        'currency': currency,
+        'payment_capture': '1'
+    })
+
+   
+    Payment.objects.create(
+        user=request.user,
+        order_id=razorpay_order['id'],
+        amount=amount,
+        status='CREATED'
+    )
+
+    context = {
+        'razorpay_order_id': razorpay_order['id'],
+        'razorpay_key_id': settings.RAZORPAY_KEY_ID,
+        'amount': amount_in_paise,
+        'currency': currency,
+        'callback_url': '/paymenthandler/'
+    }
+    return render(request, 'checkout.html', context)
