@@ -13,7 +13,9 @@ from django.core.exceptions import ObjectDoesNotExist
 import razorpay
 from django.conf import settings
 from .models import Payment
-
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
 def Register(request):
     if request.method == 'POST':
@@ -49,12 +51,18 @@ def Logout(request):
 
 @login_required
 def HomePage(request):
-    return render (request,"homepage.html")
+    featured_products = products.objects.filter(is_featured=1)
+    latest_products=products.objects.order_by('-id')[:8]
+    context={
+        "featured_products":featured_products,
+        "latest_products":latest_products
+    }
+    return render (request,"homepage.html",context)
 
 @login_required
 def Products(request):
     Products = products.objects.all()
-    paginator = Paginator(Products,4)
+    paginator = Paginator(Products,8)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
     current_page = page_number if page_number else 1
@@ -108,7 +116,9 @@ def RemoveCartItem(request,id):
     return redirect('cart')
 
 @login_required
-def initiate_payment(request,amount):
+def initiate_payment(request):
+    data = json.loads(request.body)
+    amount = float(data.get("amount"))
     client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
     amount = float(amount)
     amount_in_paise = int(amount) * 100
@@ -129,11 +139,55 @@ def initiate_payment(request,amount):
         status='CREATED'
     )
 
-    context = {
+    return JsonResponse({
         'razorpay_order_id': razorpay_order['id'],
         'razorpay_key_id': settings.RAZORPAY_KEY_ID,
         'amount': amount_in_paise,
         'currency': currency,
-        'callback_url': '/paymenthandler/'
-    }
-    return render(request, 'checkout.html', context)
+    })
+    
+    
+@csrf_exempt
+def paymenthandler(request):
+    if request.method == "POST":
+        try:
+            # Load the data sent from frontend (as JSON)
+            data = json.loads(request.body)
+
+            # Extract required fields
+            payment_id = data.get('razorpay_payment_id')
+            order_id = data.get('razorpay_order_id')
+            signature = data.get('razorpay_signature')
+
+            # Verify that all fields are present
+            if not payment_id or not order_id or not signature:
+                return JsonResponse({'status': 'error', 'message': 'Missing parameters'}, status=400)
+
+            # Initialize Razorpay client
+            client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+
+            # Verify signature to ensure payment is from Razorpay
+            client.utility.verify_payment_signature({
+                'razorpay_order_id': order_id,
+                'razorpay_payment_id': payment_id,
+                'razorpay_signature': signature
+            })
+
+            # Update the payment in your database
+            payment = Payment.objects.get(order_id=order_id)
+            payment.payment_id = payment_id
+            payment.status = 'PAID'
+            payment.save()
+
+            return JsonResponse({'status': 'success'})
+
+        except razorpay.errors.SignatureVerificationError:
+            return JsonResponse({'status': 'error', 'message': 'Invalid signature'}, status=400)
+
+        except Payment.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Payment record not found'}, status=404)
+
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)

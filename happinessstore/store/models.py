@@ -25,7 +25,7 @@ class CartItem(models.Model):
  
  
 class Payment(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)  # Link to user
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     order_id = models.CharField(max_length=100)
     payment_id = models.CharField(max_length=100, blank=True, null=True)
     amount = models.FloatField()

@@ -11,5 +11,6 @@ urlpatterns = [
     path('Cart', views.cart ,name="cart"),
     path('AddtoCart', views.AddtoCart ,name="addtocart"),
     path('RemoveCartItem/<id>', views.RemoveCartItem ,name="RemoveCartItem"),
-    path('initiatepayment/<amount>', views.initiate_payment ,name="Initiate_payment")
+    path('initiatepayment', views.initiate_payment ,name="Initiate_payment"),
+    path('paymenthandler', views.paymenthandler ,name="paymenthandler")
 ]

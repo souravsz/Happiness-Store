@@ -41,6 +41,64 @@
                 </tr>
             </table>
         </div>
-         <a href="{% url 'Initiate_payment' amount=grandtotal %}" type="submit" class="btn" style="margin-left:630px;border:none;">Confirm Order</a>
+         <button id="confirm-order" class="btn" style="margin-left:630px;border:none;">Confirm Order</button>
     </div>
 {% include "footer.html" %}
+
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    document.getElementById('confirm-order').onclick = function () {
+    const amount = "{{ grandtotal|floatformat:2 }}";
+
+    fetch("{% url 'Initiate_payment' %}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+        },
+        body: JSON.stringify({ amount: amount })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+
+        const options = {
+            key: data.razorpay_key_id,
+            amount: data.amount_in_paise,
+            currency: data.currency,
+            name: "Happiness Store",
+            description: "Order Payment",
+            order_id: data.razorpay_order_id,
+            handler: function (response) {
+               
+                fetch("{% url 'paymenthandler' %}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": "{{ csrf_token }}"
+                    },
+                    body: JSON.stringify(response)
+                })
+                .then(res => res.json())
+                .then(result => {
+                    if (result.status === "success") {
+                        window.location.href = "/payment-success/";
+                    } else {
+                        window.location.href = "/payment-failure/";
+                    }
+                });
+            },
+            theme: {
+                color: "#3399cc"
+            }
+        };
+        
+        const rzp = new Razorpay(options);
+        rzp.open();
+    });
+};
+</script>
